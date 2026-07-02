@@ -95,7 +95,7 @@ img {
   /* Colors */
   --bg-primary: #0a0e17;
   --bg-secondary: #0d1424;
-  --bg-card: rgba(15, 25, 45, 0.7);
+  --bg-card: rgba(0, 0, 0, 0.7);
   --accent-cyan: #00f5ff;
   --accent-green: #00ff88;
   --accent-red: #ff3366;
