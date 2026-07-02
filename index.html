@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Motaw3 - SOC Analyst & Blue Team Defender. Documenting the journey from zero to SOC analyst with real SIEM alerts, triage, and analyst thinking.">
+    <meta name="author" content="Khaled Motawea">
+    <meta property="og:title" content="Motaw3 // SOC Analyst Portfolio">
+    <meta property="og:description" content="Documenting the journey from zero to SOC analyst. Real SIEM alerts, real triage, real analyst thinking.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://github.com/Khaledak74">
+    <title>Motaw3 // SOC Analyst & Blue Team Defender</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web@2.0.3"></script>
+    
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        /* CSS Custom Properties */
+        :root {
+            --bg-dark: #0a0e17;
+            --bg-card: rgba(15, 23, 42, 0.7);
+            --cyan: #00f5ff;
+            --green: #00ff88;
+            --red: #ff3366;
+            --purple: #b24bf3;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            --glow-cyan: 0 0 10px #00f5ff, 0 0 20px #00f5ff, 0 0 40px #00f5ff;
+            --glow-green: 0 0 10px #00ff88, 0 0 20px #00ff88, 0 0 40px #00ff88;
+            --glow-red: 0 0 10px #ff3366, 0 0 20px #ff3366, 0 0 40px #ff3366;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* LOADER OVERLAY */
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loader-content {
+            font-family: var(--font-mono);
+            color: var(--cyan);
+            font-size: 1.2rem;
+            text-align: left;
+        }
+
+        .loader-line {
+            opacity: 0;
+            transform: translateY(10px);
+            animation: loaderLineAppear 0.3s ease forwards;
+        }
+
+        .loader-line:nth-child(1) { animation-delay: 0.2s; }
+        .loader-line:nth-child(2) { animation-delay: 0.6s; }
+        .loader-line:nth-child(3) { animation-delay: 1.0s; }
+        .loader-line:nth-child(4) { animation-delay: 1.4s; color: var(--green); }
+
+        @keyframes loaderLineAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* CANVAS BACKGROUND */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        /* SCANLINE OVERLAY */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9998;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1) 0px,
+                rgba(0, 0, 0, 0.1) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+        }
+
+        /* CUSTOM CURSOR */
+        .cursor-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--cyan);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: var(--glow-cyan);
+            transform: translate(-50%, -50%);
+            transition: transform 0.1s ease;
+        }
+
+        .cursor-ring {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--cyan);
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            transition: all 0.15s ease-out;
+        }
+
+        .cursor-ring.hover {
+            width: 60px;
+            height: 60px;
+            border-color: var(--green);
+        }
+
+        /* NAVIGATION */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: rgba(10, 14, 23, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(0, 245, 255, 0.1);
+        }
+
+        .nav-logo {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--cyan);
+            text-shadow: var(--glow-cyan);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--cyan);
+            box-shadow: var(--glow-cyan);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan);
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 6px;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .hamburger span {
+            width: 30px;
+            height: 2px;
+            background: var(--cyan);
+            transition: all 0.3s ease;
+        }
+
+        .hamburger.active span:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+
+        .hamburger.active span:nth-child(2) {
+            opacity: 0;
+        }
+
+        .hamburger.active span:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+
+        /* HERO SECTION */
+        #home {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 10;
+            padding: 2rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(3rem, 10vw, 6rem);
+            font-weight: 900;
+            color: var(--cyan);
+            text-shadow: var(--glow-cyan);
+            margin-bottom: 1rem;
+            letter-spacing: 4px;
+        }
+
+        .hero-subtitle {
+            font-family: var(--font-mono);
+            font-size: clamp(1rem, 3vw, 1.5rem);
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+
+        .typewriter {
+            color: var(--green);
+            text-shadow: var(--glow-green);
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            padding: 1rem 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: transparent;
+            border: 2px solid var(--cyan);
+            color: var(--cyan);
+            box-shadow: 0 0 10px rgba(0, 245, 255, 0.3);
+        }
+
+        .btn-primary:hover {
+            background: var(--cyan);
+            color: var(--bg-dark);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--green);
+            color: var(--green);
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-secondary:hover {
+            background: var(--green);
+            color: var(--bg-dark);
+            box-shadow: var(--glow-green);
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .shape {
+            position: absolute;
+            opacity: 0.6;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .shape-1 {
+            top: 20%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            top: 60%;
+            right: 15%;
+            animation-delay: 2s;
+        }
+
+        .shape-3 {
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 4s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-30px) rotate(180deg);
+            }
+        }
+
+        /* SECTIONS COMMON */
+        section {
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .section-header {
+            font-family: var(--font-mono);
+            font-size: clamp(1.5rem, 4vw, 2.5rem);
+            color: var(--cyan);
+            text-align: center;
+            margin-bottom: 4rem;
+            text-shadow: var(--glow-cyan);
+        }
+
+        .section-header.red {
+            color: var(--red);
+            text-shadow: var(--glow-red);
+        }
+
+        /* ABOUT SECTION */
+        #about {
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 245, 255, 0.03) 50%, transparent 100%);
+        }
+
+        .about-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 4rem;
+            align-items: start;
+        }
+
+        .profile-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .profile-card::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, var(--cyan), var(--green), var(--cyan));
+            border-radius: 20px;
+            z-index: -1;
+            animation: rotateBorder 4s linear infinite;
+        }
+
+        @keyframes rotateBorder {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .profile-icon {
+            font-size: 5rem;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+        }
+
+        .profile-name {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .profile-role {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--green);
+        }
+
+        .about-content h3 {
+            font-family: var(--font-mono);
+            font-size: 1.2rem;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+        }
+
+        .about-content p {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 2rem;
+        }
+
+        .skills-bars {
+            margin-bottom: 2rem;
+        }
+
+        .skill-bar {
+            margin-bottom: 1rem;
+        }
+
+        .skill-label {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            margin-bottom: 0.3rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .skill-progress {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .skill-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--cyan), var(--green));
+            border-radius: 4px;
+            box-shadow: 0 0 10px var(--cyan);
+            width: 0;
+            transition: width 1.5s ease;
+        }
+
+        .terminal-window {
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            border-radius: 10px;
+            padding: 1.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--green);
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        .terminal-window .prompt {
+            color: var(--cyan);
+        }
+
+        .terminal-window .output {
+            color: var(--text-secondary);
+        }
+
+        .terminal-window .json-key {
+            color: var(--purple);
+        }
+
+        .terminal-window .json-string {
+            color: var(--green);
+        }
+
+        .terminal-window .json-number {
+            color: var(--red);
+        }
+
+        /* BLUE TEAM & RED TEAM SECTIONS */
+        .filter-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 3rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            padding: 0.5rem 1.5rem;
+            background: transparent;
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+        }
+
+        .filter-tab:hover,
+        .filter-tab.active {
+            background: var(--cyan);
+            color: var(--bg-dark);
+            border-color: var(--cyan);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .filter-tab.red:hover,
+        .filter-tab.red.active {
+            background: var(--red);
+            border-color: var(--red);
+            box-shadow: var(--glow-red);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--cyan);
+            box-shadow: 0 10px 40px rgba(0, 245, 255, 0.2);
+        }
+
+        .card.red::before {
+            background: linear-gradient(90deg, transparent, var(--red), transparent);
+        }
+
+        .card.red:hover {
+            border-color: var(--red);
+            box-shadow: 0 10px 40px rgba(255, 51, 102, 0.2);
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+        }
+
+        .card.red .card-icon {
+            color: var(--red);
+        }
+
+        .card-title {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .card-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.3rem 0.8rem;
+            background: rgba(0, 245, 255, 0.1);
+            border: 1px solid rgba(0, 245, 255, 0.3);
+            color: var(--cyan);
+            border-radius: 20px;
+        }
+
+        .tag.red {
+            background: rgba(255, 51, 102, 0.1);
+            border-color: rgba(255, 51, 102, 0.3);
+            color: var(--red);
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-link {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--cyan);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card-link:hover {
+            text-shadow: var(--glow-cyan);
+        }
+
+        .card.red .card-link {
+            color: var(--red);
+        }
+
+        .card.red .card-link:hover {
+            text-shadow: var(--glow-red);
+        }
+
+        .difficulty {
+            font-family: var(--font-mono);
+            color: var(--red);
+            margin-top: 1rem;
+        }
+
+        /* BLOG SECTION */
+        #blog {
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 255, 136, 0.03) 50%, transparent 100%);
+        }
+
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .blog-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .blog-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--green);
+            box-shadow: 0 10px 40px rgba(0, 255, 136, 0.2);
+        }
+
+        .blog-thumbnail {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .blog-content {
+            padding: 1.5rem;
+        }
+
+        .blog-meta {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .blog-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            color: var(--text-primary);
+            margin-bottom: 0.8rem;
+            line-height: 1.4;
+        }
+
+        .blog-excerpt {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .blog-link {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--green);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .blog-link:hover {
+            text-shadow: var(--glow-green);
+        }
+
+        /* CONTACT SECTION */
+        #contact {
+            background: linear-gradient(180deg, transparent 0%, rgba(0, 245, 255, 0.03) 50%, transparent 100%);
+        }
+
+        .contact-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+
+        .contact-form {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .form-field {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-field label {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--cyan);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-field input,
+        .form-field textarea {
+            width: 100%;
+            padding: 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: none;
+            border-bottom: 2px solid rgba(0, 245, 255, 0.3);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-field input:focus,
+        .form-field textarea:focus {
+            outline: none;
+            border-bottom-color: var(--cyan);
+            box-shadow: 0 2px 10px rgba(0, 245, 255, 0.2);
+        }
+
+        .form-field textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+
+        .btn-submit {
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            padding: 1rem 2rem;
+            background: transparent;
+            border: 2px solid var(--cyan);
+            color: var(--cyan);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .btn-submit:hover {
+            background: var(--cyan);
+            color: var(--bg-dark);
+            box-shadow: var(--glow-cyan);
+        }
+
+        .social-links {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            border-color: var(--cyan);
+            box-shadow: 0 0 20px rgba(0, 245, 255, 0.3);
+            transform: translateX(10px);
+        }
+
+        .social-link i {
+            font-size: 2rem;
+            color: var(--cyan);
+        }
+
+        .contact-email {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 2rem;
+        }
+
+        .contact-email a {
+            color: var(--green);
+            text-decoration: none;
+        }
+
+        .contact-email a:hover {
+            text-shadow: var(--glow-green);
+        }
+
+        /* FOOTER */
+        .footer {
+            padding: 3rem 2rem;
+            text-align: center;
+            border-top: 1px solid rgba(0, 245, 255, 0.1);
+        }
+
+        .footer-text {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+        }
+
+        .footer-socials {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .footer-socials a {
+            font-size: 1.5rem;
+            color: var(--text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .footer-socials a:hover {
+            color: var(--cyan);
+            text-shadow: var(--glow-cyan);
+        }
+
+        .footer-tagline {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 992px) {
+            .about-container,
+            .contact-container {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-card {
+                max-width: 400px;
+                margin: 0 auto;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                position: fixed;
+                top: 70px;
+                left: 0;
+                width: 100%;
+                background: rgba(10, 14, 23, 0.98);
+                backdrop-filter: blur(20px);
+                flex-direction: column;
+                align-items: center;
+                padding: 2rem;
+                gap: 1.5rem;
+                transform: translateY(-150%);
+                transition: transform 0.3s ease;
+            }
+
+            .nav-links.active {
+                transform: translateY(0);
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .blog-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- LOADER -->
+    <div class="loader" id="loader">
+        <div class="loader-content">
+            <div class="loader-line">[BOOT] Initializing secure connection...</div>
+            <div class="loader-line">[CRYPT] Establishing encrypted tunnel...</div>
+            <div class="loader-line">[DECRYPT] Decrypting portfolio data...</div>
+            <div class="loader-line">[READY] Welcome, Defender.</div>
+        </div>
+    </div>
+
+    <!-- CANVAS BACKGROUND -->
+    <canvas id="bg-canvas" aria-hidden="true"></canvas>
+
+    <!-- SCANLINES -->
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <!-- CUSTOM CURSOR -->
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+
+    <!-- NAVIGATION -->
+    <header>
+        <nav class="nav">
+            <a href="#home" class="nav-logo">// Motaw3 //</a>
+            <ul class="nav-links" id="navLinks">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#blueteam">Blue Team</a></li>
+                <li><a href="#redteam">Red Team</a></li>
+                <li><a href="#blog">Blog</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <!-- HERO SECTION -->
+        <section id="home">
+            <div class="floating-shapes">
+                <svg class="shape shape-1" width="60" height="60" viewBox="0 0 60 60" fill="none">
+                    <polygon points="30,5 55,50 5,50" stroke="#00f5ff" stroke-width="1" fill="none" opacity="0.5"/>
+                </svg>
+                <svg class="shape shape-2" width="50" height="50" viewBox="0 0 50 50" fill="none">
+                    <rect x="10" y="10" width="30" height="30" stroke="#00ff88" stroke-width="1" fill="none" opacity="0.5" transform="rotate(45 25 25)"/>
+                </svg>
+                <svg class="shape shape-3" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <circle cx="20" cy="20" r="15" stroke="#b24bf3" stroke-width="1" fill="none" opacity="0.5"/>
+                </svg>
+            </div>
+            <div class="hero-content">
+                <h1 class="hero-title">// Motaw3</h1>
+                <p class="hero-subtitle">
+                    <span class="typewriter" id="typewriter"></span>
+                </p>
+                <div class="hero-buttons">
+                    <a href="#blueteam" class="btn btn-primary">View My Work</a>
+                    <a href="#contact" class="btn btn-secondary">Get In Touch</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABOUT SECTION -->
+        <section id="about">
+            <h2 class="section-header">[ ABOUT // DEFENDER ]</h2>
+            <div class="about-container">
+                <div class="profile-card">
+                    <i class="ph ph-shield-check profile-icon"></i>
+                    <h3 class="profile-name">Khaled Motawea</h3>
+                    <p class="profile-role">SOC Analyst & Blue Team Defender</p>
+                </div>
+                <div class="about-content">
+                    <h3>// Mission</h3>
+                    <p>SOC Analyst with a passion for threat hunting, incident response, and defensive security. I document real-world detections, forensic analysis, and SIEM investigations — turning alerts into stories. Every log has a story; my job is to read between the lines.</p>
+                    
+                    <h3>// Skills</h3>
+                    <div class="skills-bars">
+                        <div class="skill-bar">
+                            <div class="skill-label"><span>Splunk SIEM</span><span>95%</span></div>
+                            <div class="skill-progress"><div class="skill-fill" data-width="95"></div></div>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-label"><span>Log Analysis</span><span>90%</span></div>
+                            <div class="skill-progress"><div class="skill-fill" data-width="90"></div></div>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-label"><span>Incident Response</span><span>88%</span></div>
+                            <div class="skill-progress"><div class="skill-fill" data-width="88"></div></div>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-label"><span>Network Security</span><span>85%</span></div>
+                            <div class="skill-progress"><div class="skill-fill" data-width="85"></div></div>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-label"><span>Python</span><span>80%</span></div>
+                            <div class="skill-progress"><div class="skill-fill" data-width="80"></div></div>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-label"><span>Wireshark</span><span>78%</span></div>
+                            <div class="skill-progress"><div class="skill-fill" data-width="78"></div></div>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-label"><span>Digital Forensics</span><span>72%</span></div>
+                            <div class="skill-progress"><div class="skill-fill" data-width="72"></div></div>
+                        </div>
+                        <div class="skill-bar">
+                            <div class="skill-label"><span>MITRE ATT&CK</span><span>70%</span></div>
+                            <div class="skill-progress"><div class="skill-fill" data-width="70"></div></div>
+                        </div>
+                    </div>
+
+                    <pre class="terminal-window">
+<span class="prompt">motaw3@SOC:~$</span> whoami
+<span class="output">Khaled Motawea — SOC Analyst</span>
+
+<span class="prompt">motaw3@SOC:~$</span> cat skills.json
+{
+  <span class="json-key">"role"</span>: <span class="json-string">"SOC Analyst"</span>,
+  <span class="json-key">"focus"</span>: [<span class="json-string">"Detection Engineering"</span>, <span class="json-string">"Threat Hunting"</span>, <span class="json-string">"DFIR"</span>],
+  <span class="json-key">"tools"</span>: [<span class="json-string">"Splunk"</span>, <span class="json-string">"Elastic"</span>, <span class="json-string">"Wireshark"</span>, <span class="json-string">"Volatility"</span>]
+}
+
+<span class="prompt">motaw3@SOC:~$</span> <span class="cursor-blink">_</span>
+                    </pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- BLUE TEAM SECTION -->
+        <section id="blueteam">
+            <h2 class="section-header">[ BLUE TEAM // DEFENSE ]</h2>
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">All</button>
+                <button class="filter-tab" data-filter="siem">SIEM</button>
+                <button class="filter-tab" data-filter="forensics">Forensics</button>
+                <button class="filter-tab" data-filter="malware">Malware</button>
+                <button class="filter-tab" data-filter="threat-intel">Threat Intel</button>
+            </div>
+            <div class="cards-grid">
+                <article class="card tilt-card">
+                    <i class="ph ph-lock-key card-icon"></i>
+                    <h3 class="card-title">LSASS Credential Dumping</h3>
+                    <div class="card-tags">
+                        <span class="tag">Splunk</span>
+                        <span class="tag">Detection Rule</span>
+                        <span class="tag">Sigma</span>
+                    </div>
+                    <p class="card-description">Detecting LSASS credential dumping via Splunk SIEM using Windows Event Log analysis and process creation telemetry. Built correlation rules to identify suspicious lsass.exe access patterns.</p>
+                    <a href="#" class="card-link">ANALYZE <i class="ph ph-arrow-right"></i></a>
+                </article>
+
+                <article class="card tilt-card">
+                    <i class="ph ph-terminal card-icon"></i>
+                    <h3 class="card-title">PowerShell Empire C2 Traffic</h3>
+                    <div class="card-tags">
+                        <span class="tag">Wireshark</span>
+                        <span class="tag">Network Security</span>
+                    </div>
+                    <p class="card-description">Identifying C2 beacon patterns in network logs. Analyzed HTTP/DNS exfiltration channels and built network signatures for common Empire communication intervals.</p>
+                    <a href="#" class="card-link">ANALYZE <i class="ph ph-arrow-right"></i></a>
+                </article>
+
+                <article class="card tilt-card">
+                    <i class="ph ph-bug card-icon"></i>
+                    <h3 class="card-title">Emotet Dropper Analysis</h3>
+                    <div class="card-tags">
+                        <span class="tag">Malware Analysis</span>
+                        <span class="tag">YARA</span>
+                    </div>
+                    <p class="card-description">Static malware analysis of an Emotet dropper. Documented obfuscation techniques, macro analysis, and created YARA rules for detection across the enterprise.</p>
+                    <a href="#" class="card-link">ANALYZE <i class="ph ph-arrow-right"></i></a>
+                </article>
+
+                <article class="card tilt-card">
+                    <i class="ph ph-share-network card-icon"></i>
+                    <h3 class="card-title">Suspicious SMB Traffic</h3>
+                    <div class="card-tags">
+                        <span class="tag">Threat Hunting</span>
+                        <span class="tag">MITRE ATT&CK</span>
+                    </div>
+                    <p class="card-description">Hunting lateral movement via SMB anomalies. Mapped techniques to ATT&CK framework and developed detection use cases for Pass-the-Hash and SMB relay attacks.</p>
+                    <a href="#" class="card-link">ANALYZE <i class="ph ph-arrow-right"></i></a>
+                </article>
+
+                <article class="card tilt-card">
+                    <i class="ph ph-envelope-open card-icon"></i>
+                    <h3 class="card-title">Phishing Email Triage</h3>
+                    <div class="card-tags">
+                        <span class="tag">Incident Response</span>
+                        <span class="tag">Email Security</span>
+                    </div>
+                    <p class="card-description">SOC alert investigation playbook for phishing emails. Automated header analysis, URL extraction, and sandbox detonation workflow for rapid threat assessment.</p>
+                    <a href="#" class="card-link">ANALYZE <i class="ph ph-arrow-right"></i></a>
+                </article>
+
+                <article class="card tilt-card">
+                    <i class="ph ph-file-search card-icon"></i>
+                    <h3 class="card-title">Ransomware Encryption Detection</h3>
+                    <div class="card-tags">
+                        <span class="tag">DFIR</span>
+                        <span class="tag">Elastic</span>
+                    </div>
+                    <p class="card-description">Detecting file encryption behavior via Windows Event Logs. Built behavioral analytics to identify mass file modifications and shadow copy deletion patterns.</p>
+                    <a href="#" class="card-link">ANALYZE <i class="ph ph-arrow-right"></i></a>
+                </article>
+            </div>
+        </section>
+
+        <!-- RED TEAM SECTION -->
+        <section id="redteam">
+            <h2 class="section-header red">[ RED TEAM // ATTACK ]</h2>
+            <div class="filter-tabs">
+                <button class="filter-tab red active" data-filter="all">All</button>
+                <button class="filter-tab red" data-filter="ctf">CTF</button>
+                <button class="filter-tab red" data-filter="scripts">Scripts</button>
+                <button class="filter-tab red" data-filter="tools">Tools</button>
+            </div>
+            <div class="cards-grid">
+                <article class="card red tilt-card">
+                    <i class="ph ph-flag-pennant card-icon"></i>
+                    <h3 class="card-title">CTF Writeups Collection</h3>
+                    <div class="card-tags">
+                        <span class="tag red">TryHackMe</span>
+                        <span class="tag red">HackTheBox</span>
+                    </div>
+                    <p class="card-description">Walkthroughs of TryHackMe & HackTheBox machines. Detailed methodology documentation covering enumeration, exploitation, and post-exploitation phases.</p>
+                    <div class="difficulty">★★★ Intermediate</div>
+                    <a href="#" class="card-link">VIEW WRITEUPS <i class="ph ph-arrow-right"></i></a>
+                </article>
+
+                <article class="card red tilt-card">
+                    <i class="ph ph-code card-icon"></i>
+                    <h3 class="card-title">Custom Security Scripts</h3>
+                    <div class="card-tags">
+                        <span class="tag red">Python</span>
+                        <span class="tag red">PowerShell</span>
+                    </div>
+                    <p class="card-description">Python & PowerShell automation tools for security tasks. Includes log parsers, IOC extractors, and automated enumeration scripts for red team operations.</p>
+                    <div class="difficulty">★★★ Hard</div>
+                    <a href="#" class="card-link">VIEW REPO <i class="ph ph-arrow-right"></i></a>
+                </article>
+
+                <article class="card red tilt-card">
+                    <i class="ph ph-arrow-circle-up card-icon"></i>
+                    <h3 class="card-title">Privilege Escalation Playbook</h3>
+                    <div class="card-tags">
+                        <span class="tag red">CTF</span>
+                        <span class="tag red">Active Directory</span>
+                    </div>
+                    <p class="card-description">Linux & Windows PE techniques compilation. Comprehensive guides with real-world examples covering kernel exploits, service misconfigs, and AD attack paths.</p>
+                    <div class="difficulty">★★★ Hard</div>
+                    <a href="#" class="card-link">VIEW PLAYBOOK <i class="ph ph-arrow-right"></i></a>
+                </article>
+
+                <article class="card red tilt-card">
+                    <i class="ph ph-globe card-icon"></i>
+                    <h3 class="card-title">Network Enumeration Toolkit</h3>
+                    <div class="card-tags">
+                        <span class="tag red">Python</span>
+                        <span class="tag red">Nmap</span>
+                    </div>
+                    <p class="card-description">Custom Nmap scripts and reconnaissance automation. Port scanners, service fingerprinting modules, and vulnerability assessment wrappers for efficient recon.</p>
+                    <div class="difficulty">★★☆ Medium</div>
+                    <a href="#" class="card-link">VIEW TOOLS <i class="ph ph-arrow-right"></i></a>
+                </article>
+            </div>
+        </section>
+
+        <!-- BLOG SECTION -->
+        <section id="blog">
+            <h2 class="section-header">[ BLOG // LOGS ]</h2>
+            <div class="blog-grid">
+                <article class="blog-card">
+                    <img src="https://picsum.photos/seed/soc1/400/250" alt="SOC Alert" class="blog-thumbnail">
+                    <div class="blog-content">
+                        <div class="blog-meta">Jan 2026 • 8 min read</div>
+                        <h3 class="blog-title">My First SOC Alert: A Real Credential Dumping Case</h3>
+                        <p class="blog-excerpt">Walking through my first real SOC investigation — from initial alert to containment. What I learned about lsass.exe access patterns and Windows Defender events.</p>
+                        <div class="card-tags">
+                            <span class="tag">Splunk</span>
+                        </div>
+                        <a href="#" class="blog-link">READ <i class="ph ph-arrow-right"></i></a>
+                    </div>
+                </article>
+
+                <article class="blog-card">
+                    <img src="https://picsum.photos/seed/mitre2/400/250" alt="MITRE ATT&CK" class="blog-thumbnail">
+                    <div class="blog-content">
+                        <div class="blog-meta">Dec 2025 • 12 min read</div>
+                        <h3 class="blog-title">Understanding MITRE ATT&CK: From Theory to Detection</h3>
+                        <p class="blog-excerpt">How I went from reading ATT&CK matrices to actually implementing detection rules. Practical examples mapping threat actors to defensive use cases.</p>
+                        <div class="card-tags">
+                            <span class="tag">Threat Intel</span>
+                        </div>
+                        <a href="#" class="blog-link">READ <i class="ph ph-arrow-right"></i></a>
+                    </div>
+                </article>
+
+                <article class="blog-card">
+                    <img src="https://picsum.photos/seed/lab3/400/250" alt="Home Lab" class="blog-thumbnail">
+                    <div class="blog-content">
+                        <div class="blog-meta">Nov 2025 • 15 min read</div>
+                        <h3 class="blog-title">Building Your Home Lab: Elastic SIEM + Wazuh</h3>
+                        <p class="blog-excerpt">Step-by-step guide to building a home lab for learning SIEM operations. From VM setup to ingesting Windows and Linux logs into Elastic Stack.</p>
+                        <div class="card-tags">
+                            <span class="tag">Setup</span>
+                        </div>
+                        <a href="#" class="blog-link">READ <i class="ph ph-arrow-right"></i></a>
+                    </div>
+                </article>
+
+                <article class="blog-card">
+                    <img src="https://picsum.photos/seed/hunt4/400/250" alt="Threat Hunting" class="blog-thumbnail">
+                    <div class="blog-content">
+                        <div class="blog-meta">Oct 2025 • 10 min read</div>
+                        <h3 class="blog-title">The Art of Threat Hunting: Hypothesis-Driven Investigation</h3>
+                        <p class="blog-excerpt">Why hunting without hypothesis is just looking for ghosts. My framework for structured threat hunting using Diamond Model and ATT&CK.</p>
+                        <div class="card-tags">
+                            <span class="tag">Threat Hunting</span>
+                        </div>
+                        <a href="#" class="blog-link">READ <i class="ph ph-arrow-right"></i></a>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <!-- CONTACT SECTION -->
+        <section id="contact">
+            <h2 class="section-header">[ CONTACT // ESTABLISH CONNECTION ]</h2>
+            <div class="contact-container">
+                <form class="contact-form" action="#" method="POST">
+                    <div class="form-field">
+                        <label for="name">name:</label>
+                        <input type="text" id="name" name="name" required placeholder="Enter your name">
+                    </div>
+                    <div class="form-field">
+                        <label for="email">email:</label>
+                        <input type="email" id="email" name="email" required placeholder="Enter your email">
+                    </div>
+                    <div class="form-field">
+                        <label for="message">message:</label>
+                        <textarea id="message" name="message" required placeholder="Enter your message"></textarea>
+                    </div>
+                    <button type="submit" class="btn-submit">[ TRANSMIT MESSAGE ]</button>
+                </form>
+                <div class="social-links">
+                    <a href="https://github.com/Khaledak74" target="_blank" rel="noopener noreferrer" class="social-link">
+                        <i class="ph ph-github-logo"></i>
+                        <span>GitHub</span>
+                    </a>
+                    <a href="https://linkedin.com/in/khaled-motawea-0861b1265/" target="_blank" rel="noopener noreferrer" class="social-link">
+                        <i class="ph ph-linkedin-logo"></i>
+                        <span>LinkedIn</span>
+                    </a>
+                    <a href="https://www.youtube.com/@Kmotawea" target="_blank" rel="noopener noreferrer" class="social-link">
+                        <i class="ph ph-youtube-logo"></i>
+                        <span>YouTube</span>
+                    </a>
+                    <a href="https://medium.com/@motaweak226" target="_blank" rel="noopener noreferrer" class="social-link">
+                        <i class="ph ph-medium-logo"></i>
+                        <span>Medium</span>
+                    </a>
+                    <a href="https://www.instagram.com/kmotawea16" target="_blank" rel="noopener noreferrer" class="social-link">
+                        <i class="ph ph-instagram-logo"></i>
+                        <span>Instagram</span>
+                    </a>
+                </div>
+            </div>
+            <p class="contact-email">Or reach me directly: <a href="mailto:motaweak226@gmail.com">motaweak226@gmail.com</a></p>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <p class="footer-text">© 2026 Motaw3 // All systems operational</p>
+        <div class="footer-socials">
+            <a href="https://github.com/Khaledak74" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                <i class="ph ph-github-logo"></i>
+            </a>
+            <a href="https://linkedin.com/in/khaled-motawea-0861b1265/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                <i class="ph ph-linkedin-logo"></i>
+            </a>
+            <a href="https://www.youtube.com/@Kmotawea" target="_blank" rel="noopener noreferrer" aria-label="YouTube">
+                <i class="ph ph-youtube-logo"></i>
+            </a>
+            <a href="https://medium.com/@motaweak226" target="_blank" rel="noopener noreferrer" aria-label="Medium">
+                <i class="ph ph-medium-logo"></i>
+            </a>
+            <a href="https://www.instagram.com/kmotawea16" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <i class="ph ph-instagram-logo"></i>
+            </a>
+        </div>
+        <p class="footer-tagline">Built with caffeine & curiosity</p>
+    </footer>
+
+    <!-- MAIN JS -->
+    <script src="main.js" defer></script>
+    
+    <script>
+        // Loader hide after 3.5 seconds
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                document.getElementById('loader').classList.add('hidden');
+            }, 3500);
+        });
+
+        // Typewriter effect for hero subtitle
+        const typewriterTexts = ['SOC Analyst', 'Blue Team Defender', 'Threat Hunter', 'Security Enthusiast'];
+        let textIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const typewriterElement = document.getElementById('typewriter');
+
+        function type() {
+            const currentText = typewriterTexts[textIndex];
+            
+            if (isDeleting) {
+                typewriterElement.textContent = currentText.substring(0, charIndex - 1);
+                charIndex--;
+            } else {
+                typewriterElement.textContent = currentText.substring(0, charIndex + 1);
+                charIndex++;
+            }
+
+            let typeSpeed = isDeleting ? 50 : 100;
+
+            if (!isDeleting && charIndex === currentText.length) {
+                typeSpeed = 2000;
+                isDeleting = true;
+            } else if (isDeleting && charIndex === 0) {
+                isDeleting = false;
+                textIndex = (textIndex + 1) % typewriterTexts.length;
+                typeSpeed = 500;
+            }
+
+            setTimeout(type, typeSpeed);
+        }
+
+        type();
+
+        // Mobile menu toggle
+        const hamburger = document.getElementById('hamburger');
+        const navLinks = document.getElementById('navLinks');
+
+        hamburger.addEventListener('click', function() {
+            hamburger.classList.toggle('active');
+            navLinks.classList.toggle('active');
+        });
+
+        // Close mobile menu when clicking a link
+        navLinks.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navLinks.classList.remove('active');
+            });
+        });
+
+        // Skill bars animation on scroll
+        const skillBars = document.querySelectorAll('.skill-fill');
+        const observerOptions = {
+            threshold: 0.5
+        };
+
+        const skillObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const width = entry.target.getAttribute('data-width');
+                    entry.target.style.width = width + '%';
+                }
+            });
+        }, observerOptions);
+
+        skillBars.forEach(bar => skillObserver.observe(bar));
+
+        // Filter tabs functionality
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const parent = this.closest('.filter-tabs');
+                parent.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
